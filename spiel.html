@@ -67,6 +67,11 @@ h3{font:700 13px "Playfair Display",serif;color:var(--gold);margin:16px 0 6px;le
 .src a{color:var(--gold)}
 #intro{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(8,14,26,.55),rgba(8,14,26,.92));padding:24px;text-align:center}
 #intro.off{display:none}
+#intro{overflow-y:auto;place-items:safe center}
+.guide{max-width:440px;margin:0 auto 18px;text-align:left;background:rgba(11,20,36,.75);border:1px solid rgba(226,194,122,.35);border-radius:14px;padding:12px 16px 10px}
+.guide h4{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e2c27a;margin:0 0 6px}
+.guide ol{margin:0;padding-left:20px}.guide li{font-size:14px;line-height:1.4;color:#e6e9f0;margin:5px 0;font-weight:400}.guide li b{color:#f6e3ae}
+
 .free{display:inline-block;background:#2fae7a;color:#fff;font:700 16px Inter,sans-serif;border-radius:20px;padding:6px 16px;margin:0 0 18px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 #intro h1{font:700 clamp(40px,11vw,76px)/1.02 "Playfair Display",serif;margin:0;background:linear-gradient(#f6e3ae,#b88a3a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 8px #000)}
 #intro em{display:block;font:italic 19px Inter;color:#e8dcc0;margin:10px 0 14px}
@@ -74,6 +79,11 @@ h3{font:700 13px "Playfair Display",serif;color:var(--gold);margin:16px 0 6px;le
 #intro .bt{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #intro .bt button{height:48px;padding:0 22px;font-size:16px}
 #intro .bt .pri{background:var(--gold);color:#1a1405}
+
+#intro{overflow-y:auto;place-items:safe center}
+.guide{max-width:440px;margin:0 auto 18px;text-align:left;background:rgba(11,20,36,.75);border:1px solid rgba(226,194,122,.35);border-radius:14px;padding:12px 16px 10px}
+.guide h4{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#e2c27a;margin:0 0 6px}
+.guide ol{margin:0;padding-left:20px}.guide li{font-size:14px;line-height:1.4;color:#e6e9f0;margin:5px 0;font-weight:400}.guide li b{color:#f6e3ae}
 
 .board tr.me td{color:var(--gold)}.board small{display:block;color:var(--mute);font-size:12px}.cpu{font:600 10px Inter,sans-serif;color:#9fb0c8;border:1px solid #4a5a75;border-radius:8px;padding:1px 6px;vertical-align:middle}
 .lb{height:36px;border-radius:20px;background:rgba(19,33,58,.9);color:var(--gold);border:1px solid var(--gold);font:700 14px Inter,sans-serif;padding:0 14px;cursor:pointer}
@@ -97,6 +107,7 @@ h3{font:700 13px "Playfair Display",serif;color:var(--gold);margin:16px 0 6px;le
   <em id="iEm"></em>
   <p id="iP"></p>
   <div class="free" id="iFree"></div>
+  <div class="guide" id="iGuide"></div>
   <div class="bt"><button class="pri" id="iGo"></button><button id="iQuiz"></button><button id="iHelp"></button><button id="iBoard"></button></div>
   <div id="iLegal"></div>
 </div></div>
@@ -313,7 +324,7 @@ function applyLang(){document.documentElement.lang=LG;mkLens();mkQS();lensBar();
  $('qNext').textContent=T('next');$('qEnd').textContent=T('end');
  $('iH1').textContent=cname();$('iEm').textContent=T('title_sfx')+' – '+T('sub');
  $('iP').textContent=`${ST.length} ${UP()} · ${Object.keys(BZ).length} ${GP()} · ${nTour} ${T('sights')} · ${T('every')}`;
- $('iFree').textContent=T('free_line');$('iGo').textContent=T('explore');$('iQuiz').textContent=T('play');$('iHelp').textContent=T('how');$('iBoard').textContent='🏆 '+BT('board');$('iLegal').innerHTML=legal();
+ $('iFree').textContent=T('free_line');$('iGuide').innerHTML='<h4>'+esc(T('help_t'))+'</h4><ol>'+T('help').map(h=>'<li><b>'+esc(h[0].charAt(0)+h[0].slice(1).toLowerCase())+'</b> – '+esc(h[1])+'</li>').join('')+'</ol>';$('iGo').textContent=T('explore');$('iQuiz').textContent=T('play');$('iHelp').textContent=T('how');$('iBoard').textContent='🏆 '+BT('board');$('iLegal').innerHTML=legal();
  document.title=cname()+' '+T('title_sfx')+' – '+CFG.marke;
  if(quiz&&!quiz.end){quiz.done?0:ask()}panel.classList.remove('open');setLens(lens);draw()}
 $('lang').innerHTML=CFG.langs.map(l=>`<option value="${l}">${esc(I18N[l].lang_name)}</option>`).join('');$('lang').value=LG;
