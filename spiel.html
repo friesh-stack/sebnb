@@ -350,7 +350,7 @@ function applyLang(){document.documentElement.lang=LG;relabel();mkLens();mkQS();
  $('iH1').textContent=cname();$('iEm').textContent=T('title_sfx')+' – '+T('sub');
  $('iP').textContent=`${ST.length} ${UP()} · ${Object.keys(BZ).length} ${GP()} · ${nTour} ${T('sights')} · ${T('every')}`;
  $('iFree').textContent=T('free_line');$('iGuide').innerHTML='<h4>'+esc(T('help_t'))+'</h4><ol>'+T('help').map(h=>'<li><b>'+esc(h[0].charAt(0)+h[0].slice(1).toLowerCase())+'</b> – '+esc(h[1])+'</li>').join('')+'</ol>';$('iGo').textContent=T('explore');$('iQuiz').textContent=T('play');$('iHelp').textContent=T('how');$('iBoard').textContent='🏆 '+BT('board');introBoard();$('iLegal').innerHTML=legal();
- document.title=cname()+' '+T('title_sfx')+' – '+CFG.marke;
+ document.title=cname()+' '+T('title_sfx')+' – '+CFG.marke;window.__poiLang&&__poiLang();
  if(quiz&&!quiz.end){quiz.done?0:ask()}panel.classList.remove('open');setLens(lens);draw()}
 $('lang').innerHTML=CFG.langs.map(l=>`<option value="${l}">${esc(I18N[l].lang_name)}</option>`).join('');$('lang').value=LG;
 $('lang').addEventListener('change',e=>{LG=e.target.value;try{localStorage.setItem('nordspiel_lang',LG)}catch(x){}applyLang()});
@@ -373,6 +373,109 @@ function tap(x,y){if((!quiz||quiz.done)&&lens==='tour'){for(const t of ST){if(!T
  sel={hex};if(quiz&&!quiz.done)answer(hex.bz,hex);else showBz(hex.bz,hex);draw()}
 addEventListener('keydown',e=>{const k={ArrowLeft:[-2,0],ArrowRight:[2,0],ArrowUp:[0,-2],ArrowDown:[0,2]}[e.key];if(k){view.cx+=k[0]*R*2;view.cy+=k[1]*R*2;draw()}if(e.key==='+')zoomAt(W/2,H/2,1.25);if(e.key==='-')zoomAt(W/2,H/2,.8);if(e.key==='Escape')$('pClose').onclick()});
 addEventListener('resize',resize);
+// ---------- Entdecken: Orte aus OpenStreetMap + aktuelles Wetter (Open-Meteo). Lädt erst, wenn der Besucher eine Kategorie antippt. ----------
+(()=>{
+const XL={
+de:{t:'Entdecken',zoom:'Für diese Kategorie näher heranzoomen',load:'Lade Orte …',none:'Keine Orte in diesem Ausschnitt',err:'Orte gerade nicht erreichbar – bitte später erneut versuchen',route:'Route planen',osm:'In OpenStreetMap ansehen',web:'Website',hours:'Öffnungszeiten',wind:'Wind',now:'Jetzt',src:'Orte: © OpenStreetMap-Mitwirkende (ODbL) · Wetter: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Sehenswürdigkeiten',museum:'Museen',rail:'Bahn & U-/S-Bahn',bus:'Bushaltestellen',shop:'Einkaufen',fun:'Attraktionen',stadium:'Stadien',garden:'Gärten & Parks',view:'Aussichtspunkte',theatre:'Theater',weather:'Wetter'}},
+en:{t:'Explore',zoom:'Zoom in closer for this category',load:'Loading places …',none:'No places in this view',err:'Places not reachable right now – please try again later',route:'Get directions',osm:'View on OpenStreetMap',web:'Website',hours:'Opening hours',wind:'Wind',now:'Now',src:'Places: © OpenStreetMap contributors (ODbL) · Weather: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Sights',museum:'Museums',rail:'Rail & metro',bus:'Bus stops',shop:'Shopping',fun:'Attractions',stadium:'Stadiums',garden:'Gardens & parks',view:'Viewpoints',theatre:'Theatres',weather:'Weather'}},
+fr:{t:'Découvrir',zoom:'Zoomez davantage pour cette catégorie',load:'Chargement …',none:'Aucun lieu dans cette vue',err:'Lieux indisponibles pour le moment',route:'Itinéraire',osm:'Voir sur OpenStreetMap',web:'Site web',hours:'Horaires',wind:'Vent',now:'Maintenant',src:'Lieux : © contributeurs OpenStreetMap (ODbL) · Météo : Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Sites',museum:'Musées',rail:'Train & métro',bus:'Arrêts de bus',shop:'Shopping',fun:'Attractions',stadium:'Stades',garden:'Jardins & parcs',view:'Points de vue',theatre:'Théâtres',weather:'Météo'}},
+es:{t:'Descubrir',zoom:'Acerque más el mapa para esta categoría',load:'Cargando …',none:'No hay lugares en esta vista',err:'Lugares no disponibles ahora',route:'Cómo llegar',osm:'Ver en OpenStreetMap',web:'Web',hours:'Horario',wind:'Viento',now:'Ahora',src:'Lugares: © colaboradores de OpenStreetMap (ODbL) · Tiempo: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Monumentos',museum:'Museos',rail:'Tren y metro',bus:'Paradas de bus',shop:'Compras',fun:'Atracciones',stadium:'Estadios',garden:'Jardines y parques',view:'Miradores',theatre:'Teatros',weather:'Tiempo'}},
+it:{t:'Scopri',zoom:'Ingrandisci di più per questa categoria',load:'Caricamento …',none:'Nessun luogo in questa vista',err:'Luoghi non disponibili al momento',route:'Indicazioni',osm:'Vedi su OpenStreetMap',web:'Sito web',hours:'Orari',wind:'Vento',now:'Ora',src:'Luoghi: © contributori OpenStreetMap (ODbL) · Meteo: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Monumenti',museum:'Musei',rail:'Treno e metro',bus:'Fermate bus',shop:'Shopping',fun:'Attrazioni',stadium:'Stadi',garden:'Giardini e parchi',view:'Panorami',theatre:'Teatri',weather:'Meteo'}},
+nl:{t:'Ontdekken',zoom:'Zoom verder in voor deze categorie',load:'Laden …',none:'Geen plaatsen in dit deel',err:'Plaatsen nu niet bereikbaar',route:'Route',osm:'Bekijk op OpenStreetMap',web:'Website',hours:'Openingstijden',wind:'Wind',now:'Nu',src:'Plaatsen: © OpenStreetMap-bijdragers (ODbL) · Weer: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Bezienswaardig',museum:'Musea',rail:'Trein & metro',bus:'Bushaltes',shop:'Winkelen',fun:'Attracties',stadium:'Stadions',garden:'Tuinen & parken',view:'Uitzichtpunten',theatre:'Theaters',weather:'Weer'}},
+sv:{t:'Upptäck',zoom:'Zooma in mer för denna kategori',load:'Laddar …',none:'Inga platser här',err:'Platser kan inte nås just nu',route:'Vägbeskrivning',osm:'Visa i OpenStreetMap',web:'Webbplats',hours:'Öppettider',wind:'Vind',now:'Nu',src:'Platser: © OpenStreetMap-bidragsgivare (ODbL) · Väder: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Sevärdheter',museum:'Museer',rail:'Tåg & tunnelbana',bus:'Busshållplatser',shop:'Shopping',fun:'Attraktioner',stadium:'Arenor',garden:'Trädgårdar & parker',view:'Utsiktsplatser',theatre:'Teatrar',weather:'Väder'}},
+nb:{t:'Utforsk',zoom:'Zoom mer inn for denne kategorien',load:'Laster …',none:'Ingen steder her',err:'Steder er ikke tilgjengelige nå',route:'Veibeskrivelse',osm:'Se i OpenStreetMap',web:'Nettside',hours:'Åpningstider',wind:'Vind',now:'Nå',src:'Steder: © OpenStreetMap-bidragsytere (ODbL) · Vær: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Severdigheter',museum:'Museer',rail:'Tog & T-bane',bus:'Busstopp',shop:'Shopping',fun:'Attraksjoner',stadium:'Stadioner',garden:'Hager & parker',view:'Utsiktspunkter',theatre:'Teatre',weather:'Vær'}},
+da:{t:'Udforsk',zoom:'Zoom mere ind for denne kategori',load:'Henter …',none:'Ingen steder her',err:'Steder kan ikke hentes lige nu',route:'Rutevejledning',osm:'Se i OpenStreetMap',web:'Hjemmeside',hours:'Åbningstider',wind:'Vind',now:'Nu',src:'Steder: © OpenStreetMap-bidragydere (ODbL) · Vejr: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Seværdigheder',museum:'Museer',rail:'Tog & metro',bus:'Busstoppesteder',shop:'Shopping',fun:'Attraktioner',stadium:'Stadioner',garden:'Haver & parker',view:'Udsigtspunkter',theatre:'Teatre',weather:'Vejr'}},
+fi:{t:'Tutki',zoom:'Lähennä enemmän tätä luokkaa varten',load:'Ladataan …',none:'Ei paikkoja tässä näkymässä',err:'Paikkoja ei juuri nyt saatu',route:'Reittiohjeet',osm:'Näytä OpenStreetMapissa',web:'Verkkosivu',hours:'Aukioloajat',wind:'Tuuli',now:'Nyt',src:'Paikat: © OpenStreetMapin tekijät (ODbL) · Sää: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Nähtävyydet',museum:'Museot',rail:'Juna & metro',bus:'Bussipysäkit',shop:'Ostokset',fun:'Elämykset',stadium:'Stadionit',garden:'Puutarhat & puistot',view:'Näköalapaikat',theatre:'Teatterit',weather:'Sää'}},
+pt:{t:'Descobrir',zoom:'Aproxime mais o mapa para esta categoria',load:'A carregar …',none:'Sem locais nesta vista',err:'Locais indisponíveis de momento',route:'Direções',osm:'Ver no OpenStreetMap',web:'Site',hours:'Horário',wind:'Vento',now:'Agora',src:'Locais: © colaboradores OpenStreetMap (ODbL) · Tempo: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Monumentos',museum:'Museus',rail:'Comboio e metro',bus:'Paragens de autocarro',shop:'Compras',fun:'Atrações',stadium:'Estádios',garden:'Jardins e parques',view:'Miradouros',theatre:'Teatros',weather:'Tempo'}},
+hu:{t:'Felfedezés',zoom:'Nagyítson tovább ehhez a kategóriához',load:'Betöltés …',none:'Nincs hely ebben a nézetben',err:'A helyek most nem érhetők el',route:'Útvonal',osm:'Megnyitás OpenStreetMapen',web:'Weboldal',hours:'Nyitvatartás',wind:'Szél',now:'Most',src:'Helyek: © OpenStreetMap közreműködők (ODbL) · Időjárás: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Látnivalók',museum:'Múzeumok',rail:'Vasút és metró',bus:'Buszmegállók',shop:'Vásárlás',fun:'Élmények',stadium:'Stadionok',garden:'Kertek és parkok',view:'Kilátók',theatre:'Színházak',weather:'Időjárás'}},
+el:{t:'Ανακαλύψτε',zoom:'Μεγεθύνετε περισσότερο για αυτή την κατηγορία',load:'Φόρτωση …',none:'Δεν υπάρχουν μέρη εδώ',err:'Τα μέρη δεν είναι διαθέσιμα τώρα',route:'Οδηγίες',osm:'Στο OpenStreetMap',web:'Ιστότοπος',hours:'Ωράριο',wind:'Άνεμος',now:'Τώρα',src:'Μέρη: © συντελεστές OpenStreetMap (ODbL) · Καιρός: Open-Meteo.com (CC BY 4.0)',
+ c:{sight:'Αξιοθέατα',museum:'Μουσεία',rail:'Τρένο & μετρό',bus:'Στάσεις λεωφορείου',shop:'Αγορές',fun:'Ψυχαγωγία',stadium:'Γήπεδα',garden:'Κήποι & πάρκα',view:'Θέα',theatre:'Θέατρα',weather:'Καιρός'}}};
+const L=()=>XL[(typeof LG!=='undefined'&&XL[LG])?LG:'de'];
+// Kategorie: Symbol, Farbe, Overpass-Abfrage, maximale Ausschnittbreite in km
+const CAT={sight:['🏛','#f2c14e','nwr["tourism"="attraction"]["name"](B);nwr["historic"~"^(castle|monument|ruins|city_gate|fort)$"]["name"](B);',120],
+ museum:['🖼','#c78bf0','nwr["tourism"~"^(museum|gallery)$"]["name"](B);',80],
+ rail:['🚆','#5fb3ff','nwr["railway"~"^(station|halt)$"]["name"](B);',50],
+ bus:['🚌','#8fd16a','node["highway"="bus_stop"](B);',5],
+ shop:['🛍','#ff8a5c','nwr["shop"~"^(mall|department_store)$"]["name"](B);way["highway"="pedestrian"]["name"](B);nwr["shop"="supermarket"](B);',12],
+ fun:['🎡','#ff6fae','nwr["tourism"~"^(theme_park|zoo|aquarium)$"](B);nwr["leisure"="water_park"](B);',150],
+ stadium:['🏟','#4fd1c5','nwr["leisure"="stadium"]["name"](B);',150],
+ garden:['🌳','#5cc06a','nwr["leisure"="garden"]["garden:type"="botanical"](B);nwr["leisure"="park"]["name"](B);',25],
+ view:['🔭','#9ad0ff','nwr["tourism"="viewpoint"](B);nwr["man_made"="tower"]["tower:type"="observation"](B);',60],
+ theatre:['🎭','#e8a0ff','nwr["amenity"~"^(theatre|arts_centre)$"]["name"](B);',60]};
+const ON=new Set(),ITEMS={},DONE={},inv=(()=>{const o=P(0,0),kx=P(1,0)[0]-o[0],ky=P(0,1)[1]-o[1];return(x,y)=>[(x-o[0])/kx,(y-o[1])/ky]})();
+const kmW=()=>W/view.s;let msgT=0,busy=0;
+const bar=document.createElement('div');bar.className='lenses poi';bar.id='poiBar';$('lenses').after(bar);
+const msg=document.createElement('div');msg.id='poiMsg';document.body.append(msg);
+const credit=document.createElement('div');credit.id='poiCredit';document.body.append(credit);
+const st=document.createElement('style');st.textContent=`.poi button{font-size:13px}.poi button[aria-pressed=true]{background:#2fae7a;color:#fff;border-color:#2fae7a}.poi .lab{align-self:center;color:var(--gold);font-weight:700;font-size:13px;white-space:nowrap;padding:0 2px 0 4px}
+#poiMsg{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);background:rgba(14,26,46,.94);color:#eef0f4;border:1px solid var(--line);border-radius:18px;padding:8px 14px;font-size:14px;z-index:3;display:none;max-width:86vw;text-align:center}
+#poiCredit{position:fixed;right:8px;bottom:6px;font-size:10px;color:#c9d3e3;background:rgba(10,16,30,.6);padding:2px 6px;border-radius:6px;z-index:1;display:none;pointer-events:none}`;document.head.append(st);
+function say(t,ms){msg.textContent=t;msg.style.display=t?'block':'none';clearTimeout(msgT);if(t&&ms)msgT=setTimeout(()=>msg.style.display='none',ms)}
+function render(){const l=L();bar.innerHTML=`<span class="lab">🧭 ${esc(l.t)}</span>`+Object.keys(CAT).concat(['weather']).map(k=>`<button data-k="${k}" aria-pressed="${ON.has(k)}">${k==='weather'?'🌡':CAT[k][0]} ${esc(l.c[k])}</button>`).join('');credit.textContent=l.src;credit.style.display=ON.size?'block':'none'}
+bar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;ON.has(k)?ON.delete(k):ON.add(k);render();if(k==='weather'&&ON.has(k))loadWx();refresh(true);draw()});
+// ----- Orte laden (Overpass) -----
+const EP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+async function fetchOP(q){for(const u of EP){try{const r=await fetch(u,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});if(r.ok)return await r.json()}catch(e){}}throw new Error('op')}
+let rT=0,lastFar='';function refresh(now){clearTimeout(rT);rT=setTimeout(load,now?50:900)}
+async function load(){const cats=[...ON].filter(k=>k!=='weather');if(!cats.length){say('');return}
+ const w=kmW(),[a,b]=inv(...toK(0,0)),[c,d]=inv(...toK(W,H)),S=Math.min(b,d),N=Math.max(b,d),Wl=Math.min(a,c),E=Math.max(a,c);
+ const tooFar=cats.filter(k=>w>CAT[k][3]),todo=cats.filter(k=>w<=CAT[k][3]&&!(DONE[k]||[]).some(r=>r[0]<=S&&r[1]<=Wl&&r[2]>=N&&r[3]>=E));
+ const fk=tooFar.join();if(tooFar.length&&!todo.length&&fk!==lastFar)say(L().zoom+': '+tooFar.map(k=>L().c[k]).join(', '),3500);lastFar=fk;
+ if(!todo.length)return;
+ const pad=.25,dy=(N-S)*pad,dx=(E-Wl)*pad,bb=[S-dy,Wl-dx,N+dy,E+dx],B=bb.map(v=>v.toFixed(4)).join(',');
+ busy++;say(L().load);
+ try{for(const k of todo){const j=await fetchOP(`[out:json][timeout:25];(${CAT[k][2].replaceAll('(B)','('+B+')')});out tags center 600;`);
+   (DONE[k]=DONE[k]||[]).push(bb);const M=ITEMS[k]=ITEMS[k]||new Map();
+   for(const e of j.elements||[]){const lat=e.lat??e.center?.lat,lon=e.lon??e.center?.lon;if(lat==null)continue;const[x,y]=P(lon,lat);M.set(e.type+e.id,{k,x,y,lat,lon,t:e.tags||{},id:e.id,type:e.type})}}
+  busy--;const n=todo.reduce((s,k)=>s+(ITEMS[k]?ITEMS[k].size:0),0);say(n?'':L().none,2500);draw()}
+ catch(e){busy--;say(L().err,4000)}}
+// ----- Wetter (Open-Meteo) -----
+let WX=null,wxT=0;const WXI=c=>c===0?'☀️':c<=2?'🌤':c===3?'☁️':c<=48?'🌫':c<=67?'🌧':c<=77?'🌨':c<=82?'🌦':c<=86?'🌨':'⛈';
+async function loadWx(){if(WX&&Date.now()-wxT<9e5)return;try{const pts=ST.map(t=>inv(t.x,t.y)),out=[];
+ for(let i=0;i<pts.length;i+=90){const p=pts.slice(i,i+90);const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.map(q=>q[1].toFixed(3)).join(',')}&longitude=${p.map(q=>q[0].toFixed(3)).join(',')}&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto`);
+  const j=await r.json();out.push(...(Array.isArray(j)?j:[j]))}
+ WX=out.map(o=>o.current);wxT=Date.now();draw()}catch(e){say(L().err,4000)}}
+setInterval(()=>{if(ON.has('weather')){wxT=0;loadWx()}},9e5);
+// ----- Zeichnen -----
+const _paint=paint;paint=function(){_paint();if(!ON.size)return;const s=view.s,occ=[];
+ for(const k of Object.keys(CAT)){if(!ON.has(k)||!ITEMS[k])continue;const[ic,col]=CAT[k],r=kmW()<3?13:10;ctx.font=`${r+2}px system-ui,"Apple Color Emoji","Segoe UI Emoji",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  let n=0;for(const it of ITEMS[k].values()){const[x,y]=toS(it.x,it.y);if(x<-20||x>W+20||y<-20||y>H+20)continue;if(++n>350)break;
+   ctx.beginPath();ctx.arc(x,y,r+3,0,7);ctx.fillStyle='rgba(10,16,30,.85)';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=col;ctx.stroke();ctx.fillText(ic,x,y+1);
+   if(kmW()<4&&it.t.name){ctx.font='600 11px Inter,Inter,sans-serif';ctx.lineJoin='round';ctx.strokeStyle='rgba(10,16,30,.9)';ctx.lineWidth=3;ctx.strokeText(it.t.name,x,y+r+11);ctx.fillStyle='#fff';ctx.fillText(it.t.name,x,y+r+11);ctx.font=`${r+2}px system-ui,"Apple Color Emoji","Segoe UI Emoji",sans-serif`}}}
+ if(ON.has('weather')&&WX){ctx.textAlign='center';ctx.textBaseline='middle';
+  ST.forEach((t,i)=>{const w=WX[i];if(!w)return;const[x,y]=toS(t.x,t.y);if(x<-30||x>W+30||y<-20||y>H+20)return;if(occ.some(o=>Math.abs(o[0]-x)<56&&Math.abs(o[1]-y)<26))return;occ.push([x,y]);
+   const tx=WXI(w.weather_code)+' '+Math.round(w.temperature_2m)+'°';ctx.font='700 13px Inter,Inter,sans-serif';const bw=ctx.measureText(tx).width+14;
+   ctx.beginPath();ctx.roundRect?ctx.roundRect(x-bw/2,y-11,bw,22,11):ctx.rect(x-bw/2,y-11,bw,22);ctx.fillStyle='rgba(255,255,255,.93)';ctx.fill();ctx.fillStyle='#12223a';ctx.fillText(tx,x,y+1)})}
+ ctx.textBaseline='alphabetic'};
+// ----- Antippen -----
+const _tap=tap;tap=function(x,y){if(ON.size&&(typeof quiz==='undefined'||!quiz||quiz.done)){let best=null,bd=20;
+  for(const k of Object.keys(CAT)){if(!ON.has(k)||!ITEMS[k])continue;for(const it of ITEMS[k].values()){const[a,b]=toS(it.x,it.y),d=Math.hypot(a-x,b-y);if(d<bd){bd=d;best=it}}}
+  if(best){showPoi(best);return}
+  if(ON.has('weather')&&WX){for(let i=0;i<ST.length;i++){const[a,b]=toS(ST[i].x,ST[i].y);if(WX[i]&&Math.abs(a-x)<30&&Math.abs(b-y)<14){showWx(i);return}}}}
+ _tap(x,y)};
+function showPoi(it){const l=L(),t=it.t,nm=t.name||l.c[it.k],ad=[t['addr:street'],t['addr:housenumber']].filter(Boolean).join(' ')+(t['addr:city']?', '+t['addr:city']:'');
+ const web=t.website||t['contact:website'];pBody.innerHTML=`<div class="ph"><h2>${CAT[it.k][0]} ${esc(nm)}</h2></div><p class="sub">${esc(l.c[it.k])}${ad.trim()?' · '+esc(ad):''}</p>
+ ${t.opening_hours?`<p class="row"><span>${esc(l.hours)}</span><b>${esc(t.opening_hours)}</b></p>`:''}${t.description?`<p class="sub">${esc(t.description)}</p>`:''}
+ <p class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><a class="lb" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${it.lat},${it.lon}">🧭 ${esc(l.route)}</a>${web&&/^https?:\/\//.test(web)?`<a class="lb" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="${esc(web)}">${esc(l.web)}</a>`:''}</p>
+ <p class="src"><a href="https://www.openstreetmap.org/${it.type}/${it.id}" target="_blank" rel="noopener">${esc(l.osm)}</a> · ${esc(l.src)}</p>`;panel.classList.add('open');panel.scrollTop=0}
+function showWx(i){const l=L(),w=WX[i],t=ST[i];pBody.innerHTML=`<div class="ph"><h2>${WXI(w.weather_code)} ${esc(t.n)}</h2></div><div class="stats"><div><b>${Math.round(w.temperature_2m)} °C</b><span>${esc(l.now)}</span></div><div><b>${Math.round(w.wind_speed_10m)} km/h</b><span>${esc(l.wind)}</span></div></div><p class="src">${esc(l.src)}</p>`;panel.classList.add('open')}
+// ----- bei Kartenbewegung nachladen -----
+const _draw=draw;draw=function(){_draw();if(ON.size)refresh(false)};
+window.__poiLang=render;render();
+})();
+
 resize();fit();applyLang();
 const go=()=>{base=renderBase();for(const k in lensCache)delete lensCache[k];draw()};
 go();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);
